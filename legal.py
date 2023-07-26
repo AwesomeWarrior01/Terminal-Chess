@@ -1,8 +1,7 @@
 import pygame
 import stockfish
 import csv
-
-# TODO: Pawns att edge of board don't move preoperly. Check getLegal_pawn.
+#TODO: get_legal doesnt allow pinning piece capture for black (considered illegal after convolution).
 
 # note to self: board will be indexed 1-8.
 # board is index by (column, row). This means that (0,0) refers to the piece in the upper-left hand corner.
@@ -58,13 +57,13 @@ class Board:
             writer.writerow(['R','o','o','o','K','o','o','R'])'''
 
             writer.writerow(['o','o','o','o','r','k','o','k'])
-            writer.writerow(['o','o','p','o','o','p','o','p'])
-            writer.writerow(['o','o','p','p','o','o','P','o'])
+            writer.writerow(['q','P','q','o','o','p','b','p'])
+            writer.writerow(['o','P','P','P','o','o','P','o'])
             writer.writerow(['p','o','n','p','o','o','o','o'])
             writer.writerow(['P','o','P','o','P','P','q','o'])
-            writer.writerow(['o','r','B','o','o','o','R','o'])
-            writer.writerow(['q','o','o','o','R','o','K','R'])
-            writer.writerow(['o','R','o','Q','o','o','o','o'])
+            writer.writerow(['o','r','o','o','o','o','R','o'])
+            writer.writerow(['q','o','o','o','R','o','K','r'])
+            writer.writerow(['B','R','o','Q','o','o','o','o'])
             
     # This method will update piece positions in csv file
     def update(self, oldPos, newPos, specialMove, white):
@@ -99,7 +98,6 @@ class Board:
     def move(self, oldPos, newPos, piece):
         with open('chess.csv', 'r') as board:
             reader = csv.reader(board, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-            #print("this is the reader" + str(reader))
             layout = list(reader)
             #print(piece)
         with open('chess.csv', 'w') as board:
@@ -110,7 +108,6 @@ class Board:
             writer = csv.writer(board)
             for row in layout:
                 writer.writerow(row)
-            #print(layout)
 
     def show_legal_moves(self, oldPos, piece):
         # This method will take the inputted position and piece and update a csv file of its legal moves.
@@ -137,14 +134,11 @@ class Piece:
                 writerRow.writerow(row)
     # This function will get the name of a piece on a given square,
     def get_piece(self, position):
-        #print(str(position) + "hiiiiiiiiiiiiii")
         csv_position = tuple([position[0], position[1]])
-        #print(csv_position)
         with open('chess.csv', 'r') as board:
             reader = csv.reader(board)
             for column, row in enumerate(reader):
                 if column == csv_position[0]:
-                    #print(row[csv_position[1]])
                     piece = row[csv_position[1]]
                     return piece
 
@@ -162,41 +156,36 @@ class Piece:
             loop = False
             if piece == 'q' or piece == 'Q':
                 loop = True
+            # Done init. Now selecting delta range.
             while True:
                 # kings, knights, and pawns are sent to other functions since they have different moves.
                 if piece == 'b' or piece == 'B' or piece == 'q' or piece == 'Q':
                     self.delta_range = [(1,1),(-1,1),(-1,-1),(1,-1)]
-                    #print("hi")
                 if piece == 'r' or piece == 'R' or loop == True:
                     self.delta_range = [(1,0),(0,1),(-1,0),(0,-1)]
-                    #print("hi")
                 # If the piece turns out to be any of these pieces, use this function instead.
                 if piece == 'n' or piece == 'N' or piece == 'k' or piece == 'K':
-                    print("hello")
                     self.getLegal_limited(pos, piece, white)
                     break
                 if piece == 'p' or piece == 'P':
                     self.getLegal_pawn(pos,white)
                     break
-                
+                # Use select delta range in each direction.
                 for i in range(4):
                     self.range = [None]*8
                     #print("starting new direction")
                     superbreak = False
                     for j in range(8):
                         
-                        # Here, delta_range is sent from the child class
                         self.range[j] = tuple([(j+1)*x for x in self.delta_range[i]])
                         result = tuple(map(lambda x,y: x + y, pos, self.range[j]))
                         #print(result)
-                        
                         
                         if -1 < result[0] < 8 and -1 < result[1] < 8:
                             newPiece = self.get_piece(result)
                             print(newPiece)
                             if newPiece == 'o':
                                 self.legalMoves_general[result[0]][result[1]] = 'O'
-                                #print("continue")
                                 # Test
                                 #self.legalMoves_general_tuples[result[0]][result[1]] = result
                             elif white == True:
@@ -223,7 +212,7 @@ class Piece:
                                         break
                                     elif newPiece == self.whitePieces[l]:
                                         #print("can capture piece, but will go no farther.")
-                                        #self.legalMoves_general[result[0]][result[1]] = 'O'
+                                        self.legalMoves_general[result[0]][result[1]] = 'O'
                                         # Test
                                         #self.legalMoves_general_tuples[result[0]][result[1]] = result
                                         superbreak = True 
@@ -285,7 +274,6 @@ class Piece:
                 
     # This will check to see if the move made puts one's own king in check (another type of illegal move)
     def getLegal_pin(self, white, piece_oldPos, kingPos):
-        #TODO: return diag pin as option, and don't return unless confirmed pin.
         
         delta_range_diag = [(1,1),(-1,1),(-1,-1),(1,-1)]
         delta_range_rowcol = [(1,0),(0,1),(-1,0),(0,-1)]
@@ -477,12 +465,22 @@ class Piece:
         if sus_diag == True and legal == False:
             legalVector = self.pinVector_diag
         elif sus_rowcol == True and legal == False:
-            legalVector = self.pinVector_rowcol            
+            legalVector = self.pinVector_rowcol  
+        #If legal is true, the legal vector is determined as a blank vector.          
         return legalVector
  
-    # TODO: When the king moves, check for knight, pawn, enemy king, queen, bishop, and rook covering intended move square.
-    def getLegal_king(self, pos):
-        pass
+    # TODO: For whichever number of checks the king is in, determine the amount of legal moves. If there are no checks, this isn't taken into account.
+    # This method could also detect if checkmate or stalemate has been achieved.
+    def getLegal_king(self, pos, checkPiece, numChecks):
+        if numChecks == 1:
+            # Only legal moves are: Moving king out of check or capturing or blocking the piece that is giving the check.
+            pass
+        elif numChecks >= 2:
+            # Need to make it so that only king moves are legal here.
+            pass
+        else:
+            # This will be for numChecks == 0, or some non-numeric value.
+            pass
 
     # This function will return 3 possible values: your king is not in check, your king is in check,
     # or the king is in double check.
@@ -549,7 +547,6 @@ class Piece:
             if (white == True and piece == 'p') or (white == False and piece == 'P'):
                 inCheck += 1
         return inCheck
-    # TODO: Takes two sets of legality lists and convolutes them.
     # In this function, legal1 wil be the matrix and legal2 will be the vector.
     def legal_convolution(self, legal1, legal2):
         self.finalMoves = [None] * 8
@@ -576,13 +573,16 @@ class Piece:
             forward1 = (pos[0] - 1,pos[1])
             forward2 = (pos[0] - 2,pos[1])
             capture1 = (pos[0]-1, pos[1]-1)
+            print("capture1 = " + str(capture1))
             capture2 = (pos[0]-1, pos[1]+1)
-            if -1<capture1[0]<8 and 1<capture1[1]<8:
+            if -1<capture1[0]<8 and -1<capture1[1]<8:
                 capturePiece1 = self.get_piece(capture1)
+                print("capture piece: " + str(capturePiece1))
             else:
                 capturePiece1 = 'o'
-            if -1<capture2[0]<8 and 1<capture2[1]<8:
+            if -1<capture2[0]<8 and -1<capture2[1]<8:
                 capturePiece2 = self.get_piece(capture2)
+                print(capturePiece2)
             else:
                 capturePiece2 ='o'
             for i in self.blackPieces:
@@ -605,11 +605,11 @@ class Piece:
             forward2 = (pos[0] + 2,pos[1])
             capture1 = (pos[0]+1, pos[1]-1)
             capture2 = (pos[0]+1, pos[1]+1)
-            if -1<capture1[0]<8 and 1<capture1[1]<8:
+            if -1<capture1[0]<8 and -1<capture1[1]<8:
                 capturePiece1 = self.get_piece(capture1)
             else:
                 capturePiece1 = 'o'
-            if -1<capture2[0]<8 and 1<capture2[1]<8:
+            if -1<capture2[0]<8 and -1<capture2[1]<8:
                 capturePiece2 = self.get_piece(capture2)
             else:
                 capturePiece2 = 'o'
@@ -627,6 +627,7 @@ class Piece:
             # Testing forward movement.
         if self.get_piece(forward1) == 'o':
             self.pawnRange += [forward1]
+        print(self.pawnRange)
             
 
         # Now to transfer possible moves list to self.legalMoves_general.
