@@ -1,7 +1,6 @@
 import pygame
 import stockfish
 import csv
-#TODO: get_legal doesnt allow pinning piece capture for black (considered illegal after convolution).
 
 # note to self: board will be indexed 1-8.
 # board is index by (column, row). This means that (0,0) refers to the piece in the upper-left hand corner.
@@ -32,11 +31,12 @@ import csv
 # Also, I don't think there's much merit in having child classes since each child class (except for pawns) only has like one thing in it.
 
 
-# TODO: Include pawns and stuff into getLegal.
 class Board:
     def __init__(self) -> None:
         with open('chess.csv', 'w') as board:
             #This just creates the stating position by adding a whole bunch of rows to csv file
+            self.whiteKing_pos = (7,4)
+            self.blackKing_pos = (0,4)
             writer = csv.writer(board)
             writer.writerow(['r','n','b','q','k','b','n','r'])
             writer.writerow(['p','p','p','p','p','p','p','p'])

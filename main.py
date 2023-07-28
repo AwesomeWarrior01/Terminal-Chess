@@ -3,17 +3,15 @@ from legal import *
 if __name__ == '__main__':
     # Initialize game, constants
     Board()
-    #TODO: change these to be variable inside piece class.
-    whiteKing_pos = (7,4)
-    blackKing_pos = (0,4)
 
     white = True
+    kingPos = board.whiteKing_pos
     specialMove = False
+    print("white to move:")
     while True:
         temp = []
-        print("Select a piece.")
         while True:
-
+            print("Select a piece.")
             inputString = input()
             Piece()
             try:
@@ -30,17 +28,17 @@ if __name__ == '__main__':
             print("Not a valid piece. Try again.")
             continue
         # Determine piece color from chosen position.
-        # TODO: modify for turn-base.
+        superBreak = False
         for i in range(6):
-            if myPiece == piece.blackPieces[i]:
-                white = False
-                kingPos = blackKing_pos
-                
+            if myPiece == piece.blackPieces[i] and white == True:
+                superBreak = True
                 break
-            elif myPiece == piece.whitePieces[i]:
-                white = True
-                kingPos = whiteKing_pos
+            elif myPiece == piece.whitePieces[i] and white == False:
+                superBreak = True
                 break
+        if superBreak == True:
+            print("Piece is not your color! Try again.")
+            continue
         # piece.getLegal_mate()
         print(myPiece)
         print("white: " + str(white))
@@ -53,7 +51,7 @@ if __name__ == '__main__':
         print("Select new position for piece, or type 'exit")
         while True:
             inputString = input()
-            print(whiteKing_pos)
+            #print(board.whiteKing_pos)
             if inputString == "exit":
                 break
             else:
@@ -68,6 +66,14 @@ if __name__ == '__main__':
             if piece.finalMoves[newPos[0]][newPos[1]] == 'O':
                 board.move(oldPos, newPos, myPiece)
                 print("move successful!")
+                if white == True:
+                    white = False
+                    kingPos = board.blackKing_pos
+                    print("Black to move:")
+                else:
+                    white = True
+                    kingPos = board.whiteKing_pos
+                    print("White to move:")
                 break
             else:
                 print("Not a valid move. Try again")
