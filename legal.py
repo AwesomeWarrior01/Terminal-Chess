@@ -38,14 +38,14 @@ class Board:
         with open('chess.csv', 'w') as board:
             #This just creates the stating position by adding a whole bunch of rows to csv file
             writer = csv.writer(board)
-            '''writer.writerow(['r','n','b','q','k','b','n','r'])
+            writer.writerow(['r','n','b','q','k','b','n','r'])
             writer.writerow(['p','p','p','p','p','p','p','p'])
-            writer.writerow(['q','o','o','n','o','n','o','b'])
-            writer.writerow(['q','o','o','o','o','p','n','b'])
-            writer.writerow(['q','o','o','o','q','r','o','b'])
-            writer.writerow(['o','o','o','o','o','o','P','o'])
-            writer.writerow(['P','P','o','B','P','n','n','P'])
-            writer.writerow(['R','r','o','Q','K','o','N','R'])'''
+            writer.writerow(['o','o','o','o','o','o','o','o'])
+            writer.writerow(['o','o','o','o','o','o','o','o'])
+            writer.writerow(['o','o','o','o','o','o','o','o'])
+            writer.writerow(['o','o','o','o','o','o','o','o'])
+            writer.writerow(['P','P','P','P','P','P','P','P'])
+            writer.writerow(['R','N','B','Q','K','B','N','R'])
 
             '''writer.writerow(['r','o','o','o','q','r','o','o'])
             writer.writerow(['o','o','o','o','p','o','k','o'])
@@ -56,14 +56,14 @@ class Board:
             writer.writerow(['o','P','o','o','N','o','o','o'])
             writer.writerow(['R','o','o','o','K','o','o','R'])'''
 
-            writer.writerow(['o','o','o','o','r','k','o','k'])
+            '''writer.writerow(['o','o','o','o','r','k','o','k'])
             writer.writerow(['q','P','q','o','o','p','b','p'])
             writer.writerow(['o','P','P','P','o','o','P','o'])
             writer.writerow(['p','o','n','p','o','o','o','o'])
             writer.writerow(['P','o','P','o','P','P','q','o'])
             writer.writerow(['o','r','o','o','o','o','R','o'])
             writer.writerow(['q','o','o','o','R','o','K','r'])
-            writer.writerow(['B','R','o','Q','o','o','o','o'])
+            writer.writerow(['B','R','o','Q','o','o','o','o'])'''
             
     # This method will update piece positions in csv file
     def update(self, oldPos, newPos, specialMove, white):
@@ -108,14 +108,6 @@ class Board:
             writer = csv.writer(board)
             for row in layout:
                 writer.writerow(row)
-
-    def show_legal_moves(self, oldPos, piece):
-        # This method will take the inputted position and piece and update a csv file of its legal moves.
-        # By default, the file will be filled with 'X's (illegal moves).
-        # When a piece is clicked, it will update its legal moves to be shown with 'O's
-        # The formula for calculating legal moves is as follows:
-        # Legal Moves = (Normal Moves) - (Obstacle Moves) - !(Pinned Moves) + (Special Moves)
-        pass
         
 class Piece:
     def __init__(self):
@@ -471,19 +463,28 @@ class Piece:
  
     # TODO: For whichever number of checks the king is in, determine the amount of legal moves. If there are no checks, this isn't taken into account.
     # This method could also detect if checkmate or stalemate has been achieved.
-    def getLegal_king(self, pos, checkPiece, numChecks):
+    def getLegal_mate(self, kingPos, checkPiece, numChecks):
+        # For clarification, the checkPiece will be the piece that moves and delivers the check.
+        self.kingOnly = False
         if numChecks == 1:
             # Only legal moves are: Moving king out of check or capturing or blocking the piece that is giving the check.
             pass
         elif numChecks >= 2:
             # Need to make it so that only king moves are legal here.
-            pass
+            self.kingOnly = True
+            self.getLegal()
         else:
             # This will be for numChecks == 0, or some non-numeric value.
-            pass
+            print("no checks here!")
+            return
+        # There will then be a section of code that determines if the king is mated or stalemated or not.
 
     # This function will return 3 possible values: your king is not in check, your king is in check,
     # or the king is in double check.
+
+    def checking(self, newPos, white):
+        pass
+
     def getLegal_inCheck(self, kingPos, white):
         inCheck = 0
         self.TotalDeltaRange = [(1,1),(-1,1),(-1,-1),(1,-1),(1,0),(0,1),(-1,0),(0,-1)]
@@ -557,6 +558,12 @@ class Piece:
                     for k in range(len(legal2)):
                         if (i,j) == legal2[k] and legal1[i][j] == 'O':
                             self.finalMoves[i][j] = 'O'
+        # This method will take the inputted position and piece and update a csv file of its legal moves.
+        # By default, the file will be filled with 'X's (illegal moves).
+        # When a piece is clicked, it will update its legal moves to be shown with 'O's
+        # The formula for calculating legal moves is as follows:
+        # Legal Moves = (Normal Moves) - (Obstacle Moves) - !(Pinned Moves) + (Special Moves)
+
         # If piece isn't pinned, then only general legality applies.
         else:
             self.finalMoves = legal1
