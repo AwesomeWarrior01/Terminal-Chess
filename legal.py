@@ -1,6 +1,8 @@
 import pygame
 import stockfish
 import csv
+#TODO: pawns are broken in getLegal_pieceControl. (their only legal moves as of now are captures)
+# For whatever reason, pawnCapture is true when it shouldn't be
 
 # note to self: board will be indexed 1-8.
 # board is index by (column, row). This means that (0,0) refers to the piece in the upper-left hand corner.
@@ -23,7 +25,6 @@ import csv
 # 3. Moving your own king into check.
 # 4. Moving your own piece that would put your own king into check
 
-# So far, only #1 #2 and #4 has been taken care of. However, #3 still need to be done.
 
 # I'm currently at a dilemna when it comes to recording general piece legality: Do I append every position one-by-one to a csv file, or do I create a list and append to that?
 # Also, to make things easier, should I get rid of the child classes and just have one piece class with if statements?
@@ -41,11 +42,11 @@ class Board:
             writer.writerow(['r','n','b','q','k','b','n','r'])
             writer.writerow(['p','p','p','p','p','p','p','p'])
             writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['P','P','P','P','P','P','P','P'])
-            writer.writerow(['R','N','B','Q','K','B','N','R'])
+            writer.writerow(['b','o','o','P','o','o','o','o'])
+            writer.writerow(['o','o','o','o','o','Q','o','b'])
+            writer.writerow(['o','o','P','o','o','R','o','o'])
+            writer.writerow(['P','P','o','o','P','P','P','R'])
+            writer.writerow(['R','N','q','Q','K','P','N','o'])
 
             '''writer.writerow(['r','o','o','o','q','r','o','o'])
             writer.writerow(['o','o','o','o','p','o','k','o'])
@@ -94,7 +95,7 @@ class Board:
             print("Bruh what kinda goofy-ahh move did you just make??")
 
         Board.move(self, oldPos, newPos, piece)
-
+    #TODO: implement board.update!
     def move(self, oldPos, newPos, piece):
         with open('chess.csv', 'r') as board:
             reader = csv.reader(board, delimiter=',', quoting=csv.QUOTE_MINIMAL)
@@ -136,7 +137,6 @@ class Piece:
 
      # This functon checks legality for bishop, rook, and queen (pieces that have unlimited move distance)
     def getLegal(self, pos, piece, white):
-        #Just initializing some lists here.
         
         with open('piece.csv', 'w') as writer:
             # This just creates the default legal moves by adding a whole bunch of rows to a csv file
@@ -175,7 +175,7 @@ class Piece:
                         
                         if -1 < result[0] < 8 and -1 < result[1] < 8:
                             newPiece = self.get_piece(result)
-                            print(newPiece)
+                            #print(newPiece)
                             if newPiece == 'o':
                                 self.legalMoves_general[result[0]][result[1]] = 'O'
                                 # Test
@@ -223,7 +223,7 @@ class Piece:
                 else:
                     loop = False
             # Write to piece.csv
-            print("hi")        
+            #print("hi")        
             for row in self.legalMoves_general:
                 writerRow.writerow(row)
     
@@ -242,12 +242,12 @@ class Piece:
             if -1 < result[0] < 8 and -1 < result[1] < 8:
                 # I could actually edit this to cond between knight and king.
                 if piece == 'k' or piece == 'K':
-                    self. enemyControlledSquare = self.getLegal_inCheck(result, white)
+                    self.enemyControlledSquare = self.getLegal_pieceControl(result, kingPos, white, True, True)
 
                 # Makes sure the pos isnt controlled by enemy if piece == king
                 if self.enemyControlledSquare == 0:
                     
-                # For the king though, I will also have to check for castling.
+                # TODO: For the king though, I will also have to check for castling.
                     for k in range(6):
                         newPiece = self.get_piece(result)
                         if newPiece == self.whitePieces[k] and white == False:
@@ -287,7 +287,7 @@ class Piece:
                 range_temp[j] = tuple([(j+1)*x for x in delta_range_diag[i]])
                 #print(self.range[j])
                 diag_result = tuple(map(lambda x,y: x + y, kingPos, range_temp[j]))
-                print(diag_result)
+                #print(diag_result)
                 if piece_oldPos == diag_result:
 
                     sus_diag = True
@@ -340,7 +340,7 @@ class Piece:
                 elif -1<diag_result[0]<8 and -1<diag_result[1]<8:
                     test_piece = self.get_piece(diag_result)
                     if test_piece != 'o':
-                        print("moved piece was not pinned on diag vector :)")
+                        #print("moved piece was not pinned on diag vector :)")
                         break
                 else:
                     break
@@ -373,11 +373,11 @@ class Piece:
                         #print(self.pinVector_rowcol)
                         break
                         
-                    #T his only continues checking if there is a 'o' on the square.
+                    #This only continues checking if there is a 'o' on the square.
                     elif -1<rowcol_result[0]<8 and -1<rowcol_result[1]<8:
                         test_piece = self.get_piece(rowcol_result)
                         if test_piece != 'o':
-                            print("moved piece not pinned on rowcol vector :)")
+                            #print("moved piece not pinned on rowcol vector :)")
                             break
                     else:
                         break
@@ -428,20 +428,20 @@ class Piece:
                 else:
                     condition1 = 'B'
                     condition2 = 'Q'
-                print(condition2)
-                print(condition1)
+                #print(condition2)
+                #print(condition1)
                 test_diag_temp = [None]*8
                 test_diag = [None]*8
                 for j in range(8):
                     test_diag_temp[j] = tuple([(j+1)*x for x in new_vector])
-                    print(test_diag_temp)
+                    #print(test_diag_temp)
                     test_diag[j] = tuple(map(lambda x,y: x + y, piece_oldPos, test_diag_temp[j]))
-                    print(test_diag[j])
+                    #print(test_diag[j])
                     # This check is makes sure that the coordinate actually exists on the chess board. If not,
                     # the loop will break
                     if (-1 < test_diag[j][0] < 8 and -1 < test_diag[j][1] < 8):
                         piece = self.get_piece(test_diag[j])
-                        print(piece)
+                        #print(piece)
                         if  piece == condition1 or piece ==  condition2:
                             legal = False
                             print("you sussy baka. there is something pinning that piece to your king along the diagonal!")
@@ -462,54 +462,145 @@ class Piece:
         return legalVector
  
     # TODO: For whichever number of checks the king is in, determine the amount of legal moves. If there are no checks, this isn't taken into account.
-    # This method could also detect if checkmate or stalemate has been achieved.
-    def getLegal_mate(self, kingPos, checkPiece, numChecks):
-        # For clarification, the checkPiece will be the piece that moves and delivers the check.
+    # This method will also detect if checkmate or stalemate has been achieved.
+    def getLegal_mate(self, kingPos, checkPos, numChecks, white, pieceVectorTemp):
+    # TODO: now that I have occupancy vector, I can now run getLegalinCheck for each position! 
+        # For clarification, the checkPiece will be the piece that moves and delivers the check, or rather the first check given.
+        print("starting getLegal_mate...")
         self.kingOnly = False
+        pawnCapture = False # See 'getLegal_pieceControl'
+        enemyPawn = False # The pawns we will be checking occupancy for are own color.
+
+        # I need to differentiate between which king is being tested here.
+        if white == True:
+            king = 'K'
+        else:
+            king = 'k'
+
         if numChecks == 1:
-            # Only legal moves are: Moving king out of check or capturing or blocking the piece that is giving the check.
-            pass
+
+            # Only legal moves are: moving king out of check or capturing or blocking the piece that is giving the check.
+            #TODO: Add more code here!
+            #Specifically: 
+            # 1. Find a way to obtain piece check vector (unless piece is knight)
+            # 2. Check for pin on possible piece block or capture.
+            
+            if white == True:
+                #Note: checkPos is the position of checking piece.
+                numMoves = 0
+                for a in pieceVectorTemp:
+                    #check to see if last item in list, since it contains checking piece coords.
+                    print(a)
+                    if a == pieceVectorTemp[-1]:
+                        pawnCapture = True
+                    numMoves += self.getLegal_pieceControl(a, kingPos, (not white), enemyPawn, pawnCapture)
+                    print("number of legal moves: " + str(numMoves))
+            else:
+                numMoves = 0
+                for b in pieceVectorTemp:
+                    if b == pieceVectorTemp[-1]:
+                        pawnCapture = True
+                    numMoves += self.getLegal_pieceControl(b, kingPos, white, (not enemyPawn), pawnCapture)
+                    print("number of legal moves: " + str(numMoves))
+
+            if numMoves == 0:
+                self.kingOnly = True
         elif numChecks >= 2:
             # Need to make it so that only king moves are legal here.
             self.kingOnly = True
-            self.getLegal()
+            
         else:
             # This will be for numChecks == 0, or some non-numeric value.
             print("no checks here!")
-            return
-        # There will then be a section of code that determines if the king is mated or stalemated or not.
 
-    # This function will return 3 possible values: your king is not in check, your king is in check,
-    # or the king is in double check.
+        # If only king moves are possible, but the king cant make any moves,
+        # then it is checkmate!
 
-    def checking(self, newPos, white):
-        pass
+        # If the king cant make any moves but it is not in check, then we need
+        # to test for stalemate.
+        self.getLegal(kingPos, king, white)
+        legalKingMoves = 0
+        
+        for i in range(8):
+            # Ok, so this is a really bad fix but this set of tuples never changes.
+            result =  tuple(map(lambda x,y: x + y, kingPos, self.totalDeltaRange[i]))
+            if -1<result[0]<8 and -1<result[1]<8:
+                if self.legalMoves_general[result[0]][result[1]] == 'O':
+                    legalKingMoves += 1
+        print("KingMoves = " + str(legalKingMoves))
+        
+        #TODO: There will then be a section of code that determines if the king is mated or stalemated or not.
 
-    def getLegal_inCheck(self, kingPos, white):
+        if legalKingMoves == 0:
+            if self.kingOnly == True:
+                print("king has been checkmated!")
+            elif numChecks == 0:
+                print("king may be stalemated. Need to investigate further.")
+            else:
+                print("King is not checkmated or stalemated :)")
+
+    def getLegal_pieceControl(self, pos, kingPos, white, enemyPawn, pawnCapture):
+        # This function determines how many pieces control a certain square.
+        # It also determines how many checks your king is currently in.
+        # This represents the number of pieces that control a certain square.
+
+        # Note about the boolean 'pawnCapture': if true, the pawn can only capture pieces
+        # on the sqare. If false, the pawn can only move to that square. This is because a pawn
+        # cannot capture to an empty square, and must cannot just simply move normally to
+        # an occupied square.
+        self.checkVector = []
         inCheck = 0
-        self.TotalDeltaRange = [(1,1),(-1,1),(-1,-1),(1,-1),(1,0),(0,1),(-1,0),(0,-1)]
+        #print(str(pawnCapture) + "idk")
+
+        self.totalDeltaRange = [(1,1),(-1,1),(-1,-1),(1,-1),(1,0),(0,1),(-1,0),(0,-1)]
         self.enemyKnightRange = [(2,1),(1,2),(-1,2),(-2,1),(-2,-1),(-1,-2),(1,-2),(2,-1)]
-        if white == True:
+        if white == True and enemyPawn == True:
             self.enemyPawnRange = [(-1,-1),(-1,1)]
-        else:
+        elif white == False and enemyPawn == True:
             self.enemyPawnRange = [(1,-1),(1,1)]
+        # For below,This is if checking for own pawns.
+        # NOTE: in ths section when 'white == True' we are actually talking in respect to black here.
+        # This is because in order to check same side piece occupancy, I'm treating white as black.
+        # This is a very bad hack but I wanted to minimize my code.
+        elif white == True and pawnCapture == True and enemyPawn == False:
+            self.enemyPawnRange = [(-1,-1),(-1,1)]
+        elif white == True and pawnCapture == False and enemyPawn == False:
+            self.enemyPawnRange = [(-1,0),(-2,0)]
+        elif white == False and pawnCapture == True and enemyPawn == False:
+            self.enemyPawnRange = [(1,-1),(1,1)]
+        else:
+            self.enemyPawnRange = [(1,0),(2,0)]
+        # NOTE: keep in mind that the pawncapture==false second pawnrange element only
+        # exists if it is the first pawn move. If the pawn is not in its starting position,
+        # then the loop iteration is skipped.
+
         # for bishops, rooks, and queens.   
         for i in range(8):
+            checkVector = []
             for j in range(8):
                 # This is exact same code in 'getLegal_pin'. Maybe I can optimize?
-                range_temp = tuple([(j+1)*x for x in self.TotalDeltaRange[i]])
-                result = tuple(map(lambda x,y: x + y, kingPos, range_temp))
+                range_temp = tuple([(j+1)*x for x in self.totalDeltaRange[i]])
+                result = tuple(map(lambda x,y: x + y, pos, range_temp))
+                
                 #print(result)
                 if -1<result[0]<8 and -1<result[1]<8:
                     piece = self.get_piece(result)
+                    # Yes I know I can optimize this but I personally like it for code readability.
+                    checkVector.append(result)
                 else:
-                    print("king check test: out of range!")
+                    checkVector = []
                     break
                 # matches checks for white pieces
                 if white == True:
                     if piece == 'q' or (piece == 'b' and -1<i<4) or (piece == 'r' and 3<i<8):
-                        inCheck += 1
-                        break
+                        pinnedState = self.getLegal_pin((not white), result, kingPos)    
+                        if pinnedState == [] or enemyPawn == True:
+                            if inCheck == 0:
+                                # This will lock the vector for the first check that is detected.
+                                self.checkVector = checkVector
+                            inCheck += 1
+                            print("adding B/R/Q move")
+                            break
                     elif piece == 'o':
                         continue
                     else:
@@ -518,35 +609,53 @@ class Piece:
                 # matches checks for black pieces
                 else:
                     if piece == 'Q' or (piece == 'B' and -1<i<4) or (piece == 'R' and 3<i<8):
-                        inCheck += 1
-                        break
+                        pinnedState = self.getLegal_pin((not white), result, kingPos)    
+                        if pinnedState == [] or enemyPawn == True:
+                            if inCheck == 0:
+                                self.checkVector = checkVector
+                            inCheck += 1
+                            print("adding B/R/Q move")
+                            break
                     elif piece == 'o':
                         continue
                     else:
                         #print("no check along this vector")
                         break
+        print(self.checkVector)
         # for knights
         for k in range(8):
             
-            result = tuple(map(lambda x,y: x + y, kingPos, self.enemyKnightRange[k]))
+            result = tuple(map(lambda x,y: x + y, pos, self.enemyKnightRange[k]))
             if -1<result[0]<8 and -1<result[1]<8:
                 #print(result)
                 piece = self.get_piece(result)
             else:
-                print("king check test: out of range!")
                 continue
             if (white == True and piece == 'n') or (white == False and piece == 'N'):
-                inCheck += 1
-        # for pawns
+                pinnedState = self.getLegal_pin((not white), result, kingPos)    
+                if pinnedState == [] or enemyPawn == True:
+                    inCheck += 1
+                    print("adding legal K move")
+        # for pawns TODO: change this to account for blocks!
         for l in range(2):
-            result = tuple(map(lambda x,y: x + y, kingPos, self.enemyPawnRange[l]))
+            result = tuple(map(lambda x,y: x + y, pos, self.enemyPawnRange[l]))
+            print("pawnPos: " + str(result))
+
             if -1<result[0]<8 and -1<result[1]<8:
+                # This will ignore second enemyPawnRange element if it isn't in its starting position.
+                if l == 1 and ((result[0] != 1 and white == False) or (result[0] != 6 and white == True)):
+                    break
                 piece = self.get_piece(result)
+                print("Test piece:" + str(result) + str(piece))
+                print("pawnCapture:" + str(pawnCapture))
             else:
-                print("king check test: out of range!")
+                #print("king check test: out of range!")
                 continue
-            if (white == True and piece == 'p') or (white == False and piece == 'P'):
-                inCheck += 1
+            if (white == True and piece == 'p') or (white == False and piece == 'P') or (piece == 'o' and pawnCapture == False):
+                pinnedState = self.getLegal_pin((not white), result, kingPos)    
+                if pinnedState == [] or enemyPawn == True:    
+                    inCheck += 1
+                    print("adding legal pawn move")
         return inCheck
     # In this function, legal1 wil be the matrix and legal2 will be the vector.
     def legal_convolution(self, legal1, legal2):
@@ -684,7 +793,7 @@ bishop_oldPos = (7,5)
 #print(pin_test2)
 #pin_test3 = piece.getLegal_pin(white, queen_oldPos, kingPos)
 #print(pin_test3)
-#inCheck_test1 = piece.getLegal_inCheck(king3Pos, white) 
+#inCheck_test1 = piece.getLegal_pieceControl(king3Pos, white) 
 #print("Number of Checks on king: " + str(inCheck_test1))
 #king.get_piece((5,1))
 #name = input('what is your name?')

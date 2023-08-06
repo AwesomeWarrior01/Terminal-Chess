@@ -3,13 +3,26 @@ from legal import *
 if __name__ == '__main__':
     # Initialize game, constants
     Board()
-
+    # Initialize some variables for when starting the game.
     white = True
     kingPos = board.whiteKing_pos
     specialMove = False
+    
+    lastEnemyMove = (3,0) # This last enemy move is set to a dummy value since there's no checks on move #1
+
     print("white to move:")
     while True:
-        temp = []
+
+        #TODO: call 'getLegal_inCheck' here, and then call 'getLegal_mate!
+        # Gets check vector, if there is one.
+        
+        # This is really bad, and I should definitely have variable arguements, but this should also work.
+        numChecks = piece.getLegal_pieceControl(kingPos, kingPos, white, True, True)
+        print("check vector: " +  str(piece.checkVector))
+        pieceVectorTemp = piece.checkVector
+        piece.getLegal_mate(kingPos, lastEnemyMove, numChecks, white, pieceVectorTemp)
+
+        legalMoves_pin = []
         while True:
             print("Select a piece.")
             inputString = input()
@@ -44,9 +57,8 @@ if __name__ == '__main__':
         print("white: " + str(white))
         piece.getLegal(oldPos, myPiece, white)
         legalMoves_general = piece.legalMoves_general
-        temp = piece.getLegal_pin(white, oldPos, kingPos)
-        #print(temp)
-        piece.legal_convolution(legalMoves_general, temp)
+        legalMoves_pin = piece.getLegal_pin(white, oldPos, kingPos)
+        piece.legal_convolution(legalMoves_general, legalMoves_pin)
         #print(piece.finalMoves)
         print("Select new position for piece, or type 'exit")
         while True:
@@ -66,12 +78,21 @@ if __name__ == '__main__':
             if piece.finalMoves[newPos[0]][newPos[1]] == 'O':
                 board.move(oldPos, newPos, myPiece)
                 print("move successful!")
+                #very important to keep track of last move that occurred.
+                lastEnemyMove = newPos
                 if white == True:
                     white = False
+                    if myPiece == 'K':
+                        board.whiteKing_pos = newPos
+                        print("new white king pos is: " + str(newPos))
                     kingPos = board.blackKing_pos
                     print("Black to move:")
                 else:
                     white = True
+                    kingPos = board.whiteKing_pos
+                    if myPiece == 'k':
+                        board.blackKing_pos = newPos
+                        print("new black king pos is: " + str(newPos))
                     kingPos = board.whiteKing_pos
                     print("White to move:")
                 break
