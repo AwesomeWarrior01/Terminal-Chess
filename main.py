@@ -59,6 +59,8 @@ if __name__ == '__main__':
         legalMoves_general = piece.legalMoves_general
         legalMoves_pin = piece.getLegal_pin(white, oldPos, kingPos)
         piece.legal_convolution(legalMoves_general, legalMoves_pin)
+        piece.legal_convolution(piece.finalMoves, piece.checkVectorPermanent)
+
         #print(piece.finalMoves)
         print("Select new position for piece, or type 'exit")
         while True:

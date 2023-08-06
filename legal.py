@@ -40,11 +40,11 @@ class Board:
             self.blackKing_pos = (0,4)
             writer = csv.writer(board)
             writer.writerow(['r','n','b','q','k','b','n','r'])
-            writer.writerow(['p','p','p','p','p','p','p','p'])
+            writer.writerow(['p','p','p','p','o','o','p','p'])
             writer.writerow(['o','o','o','o','o','o','o','o'])
             writer.writerow(['b','o','o','P','o','o','o','o'])
-            writer.writerow(['o','o','o','o','o','Q','o','b'])
-            writer.writerow(['o','o','P','o','o','R','o','o'])
+            writer.writerow(['o','o','o','o','B','o','o','b'])
+            writer.writerow(['o','o','b','o','Q','R','o','o'])
             writer.writerow(['P','P','o','o','P','P','P','R'])
             writer.writerow(['R','N','q','Q','K','P','N','o'])
 
@@ -194,7 +194,8 @@ class Piece:
                                         superbreak = True 
                                         break
                                     else:
-                                        print("no piece matches white")
+                                        pass
+                                        #print("no piece matches white")
                                     
                             elif white == False:
                                 for l in range(6):
@@ -210,7 +211,8 @@ class Piece:
                                         superbreak = True 
                                         break
                                     else:
-                                        print("no piece matches black")
+                                        pass
+                                        #print("no piece matches black")
                             if superbreak == True:
                                 break       
                         else:
@@ -470,12 +472,17 @@ class Piece:
         self.kingOnly = False
         pawnCapture = False # See 'getLegal_pieceControl'
         enemyPawn = False # The pawns we will be checking occupancy for are own color.
+        # the class variable changes when getLegal_pieceControl is called again, so I'm saving it here.
+        self.checkVectorPermanent = piece.checkVector 
 
         # I need to differentiate between which king is being tested here.
         if white == True:
             king = 'K'
+            print("it is white's turn.")
         else:
             king = 'k'
+            print("it is black's turn.")
+
 
         if numChecks == 1:
 
@@ -498,22 +505,24 @@ class Piece:
             else:
                 numMoves = 0
                 for b in pieceVectorTemp:
+                    print(b)
                     if b == pieceVectorTemp[-1]:
                         pawnCapture = True
-                    numMoves += self.getLegal_pieceControl(b, kingPos, white, (not enemyPawn), pawnCapture)
+                    numMoves += self.getLegal_pieceControl(b, kingPos, (not white), enemyPawn, pawnCapture)
                     print("number of legal moves: " + str(numMoves))
 
             if numMoves == 0:
                 self.kingOnly = True
         elif numChecks >= 2:
             # Need to make it so that only king moves are legal here.
+            print("multiple checks!")
             self.kingOnly = True
             
         else:
             # This will be for numChecks == 0, or some non-numeric value.
             print("no checks here!")
 
-        # If only king moves are possible, but the king cant make any moves,
+        # If only king moves are possible, but the king can't make any moves,
         # then it is checkmate!
 
         # If the king cant make any moves but it is not in check, then we need
@@ -537,7 +546,10 @@ class Piece:
             elif numChecks == 0:
                 print("king may be stalemated. Need to investigate further.")
             else:
-                print("King is not checkmated or stalemated :)")
+                print("King is in check, but not checkmated or stalemated :)")
+                print(self.checkVectorPermanent)
+                #TODO: add check vector, then convolute with general piece legality to control legality!
+
 
     def getLegal_pieceControl(self, pos, kingPos, white, enemyPawn, pawnCapture):
         # This function determines how many pieces control a certain square.
@@ -593,13 +605,13 @@ class Piece:
                 # matches checks for white pieces
                 if white == True:
                     if piece == 'q' or (piece == 'b' and -1<i<4) or (piece == 'r' and 3<i<8):
-                        pinnedState = self.getLegal_pin((not white), result, kingPos)    
+                        pinnedState = self.getLegal_pin((white), result, kingPos)    
                         if pinnedState == [] or enemyPawn == True:
                             if inCheck == 0:
                                 # This will lock the vector for the first check that is detected.
                                 self.checkVector = checkVector
                             inCheck += 1
-                            print("adding B/R/Q move")
+                            print("adding B/R/Q move for white")
                             break
                     elif piece == 'o':
                         continue
@@ -614,7 +626,7 @@ class Piece:
                             if inCheck == 0:
                                 self.checkVector = checkVector
                             inCheck += 1
-                            print("adding B/R/Q move")
+                            print("adding B/R/Q move for black")
                             break
                     elif piece == 'o':
                         continue
