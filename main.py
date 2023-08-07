@@ -2,7 +2,7 @@ from legal import *
 
 if __name__ == '__main__':
     # Initialize game, constants
-    Board()
+
     # Initialize some variables for when starting the game.
     white = True
     kingPos = board.whiteKing_pos
@@ -25,8 +25,9 @@ if __name__ == '__main__':
         legalMoves_pin = []
         while True:
             print("Select a piece.")
-            inputString = input()
+            # weird stuff is being written to piece.csv, so I'm wiping it before every input.
             Piece()
+            inputString = input()
             try:
                 oldPos= tuple(map(int, inputString.split(',')))
                 if -1<oldPos[0]<8 and -1<oldPos[1]<8:
@@ -36,6 +37,8 @@ if __name__ == '__main__':
             except:
                 print("piece coords not in correct format. Try again.")
         #print(myPos)
+
+
         myPiece = piece.get_piece(oldPos)
         if myPiece == 'o':
             print("Not a valid piece. Try again.")
@@ -55,11 +58,16 @@ if __name__ == '__main__':
         # piece.getLegal_mate()
         print(myPiece)
         print("white: " + str(white))
-        piece.getLegal(oldPos, myPiece, white)
+        piece.getLegal(oldPos, kingPos, myPiece, white)
         legalMoves_general = piece.legalMoves_general
         legalMoves_pin = piece.getLegal_pin(white, oldPos, kingPos)
         piece.legal_convolution(legalMoves_general, legalMoves_pin)
-        piece.legal_convolution(piece.finalMoves, piece.checkVectorPermanent)
+        #print(piece.finalMoves)
+        # This if-statement is needed so that king pieces are not convoluted with final check vector.
+        if myPiece != 'k' and myPiece != 'K':
+            piece.legal_convolution(piece.finalMoves, piece.checkVectorPermanent)
+            #print(piece.finalMoves)
+
 
         #print(piece.finalMoves)
         print("Select new position for piece, or type 'exit")

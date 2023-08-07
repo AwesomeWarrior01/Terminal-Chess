@@ -1,8 +1,7 @@
 import pygame
 import stockfish
 import csv
-#TODO: pawns are broken in getLegal_pieceControl. (their only legal moves as of now are captures)
-# For whatever reason, pawnCapture is true when it shouldn't be
+#TODO: Take into account enemy kings in piece occupancy!
 
 # note to self: board will be indexed 1-8.
 # board is index by (column, row). This means that (0,0) refers to the piece in the upper-left hand corner.
@@ -40,13 +39,13 @@ class Board:
             self.blackKing_pos = (0,4)
             writer = csv.writer(board)
             writer.writerow(['r','n','b','q','k','b','n','r'])
-            writer.writerow(['p','p','p','p','o','o','p','p'])
+            writer.writerow(['p','p','p','p','p','p','p','p'])
             writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['b','o','o','P','o','o','o','o'])
-            writer.writerow(['o','o','o','o','B','o','o','b'])
-            writer.writerow(['o','o','b','o','Q','R','o','o'])
-            writer.writerow(['P','P','o','o','P','P','P','R'])
-            writer.writerow(['R','N','q','Q','K','P','N','o'])
+            writer.writerow(['b','o','b','o','o','o','o','o'])
+            writer.writerow(['o','o','o','o','o','o','o','o'])
+            writer.writerow(['o','o','o','o','o','o','o','o'])
+            writer.writerow(['P','P','o','o','P','o','P','p'])
+            writer.writerow(['R','B','o','B','K','B','N','R'])
 
             '''writer.writerow(['r','o','o','o','q','r','o','o'])
             writer.writerow(['o','o','o','o','p','o','k','o'])
@@ -68,11 +67,10 @@ class Board:
             
     # This method will update piece positions in csv file
     def update(self, oldPos, newPos, specialMove, white):
-        piece = Piece.get_piece(self, oldPos)
-        
+        myPiece = Piece.get_piece(self, oldPos)
              # This is the default case that works for any normal move or capture.
         if specialMove == 0:
-            pass
+            self.move(oldPos, newPos, myPiece)
         # This will be for Kingside Castling
         elif specialMove == 1:
             pass
@@ -136,7 +134,7 @@ class Piece:
                     return piece
 
      # This functon checks legality for bishop, rook, and queen (pieces that have unlimited move distance)
-    def getLegal(self, pos, piece, white):
+    def getLegal(self, pos, kingPos, piece, white):
         
         with open('piece.csv', 'w') as writer:
             # This just creates the default legal moves by adding a whole bunch of rows to a csv file
@@ -157,7 +155,7 @@ class Piece:
                     self.delta_range = [(1,0),(0,1),(-1,0),(0,-1)]
                 # If the piece turns out to be any of these pieces, use this function instead.
                 if piece == 'n' or piece == 'N' or piece == 'k' or piece == 'K':
-                    self.getLegal_limited(pos, piece, white)
+                    self.getLegal_limited(pos, kingPos, piece, white)
                     break
                 if piece == 'p' or piece == 'P':
                     self.getLegal_pawn(pos,white)
@@ -230,7 +228,7 @@ class Piece:
                 writerRow.writerow(row)
     
     # This function checks gets general legality for king and knight (pieces that have limited move distance except pawns)
-    def getLegal_limited(self, pos, piece, white):
+    def getLegal_limited(self, pos, kingPos, piece, white):
         self.enemyControlledSquare = 0
         
         if piece == 'n' or piece == 'N':
@@ -265,6 +263,7 @@ class Piece:
                         elif newPiece == 'o':
                             self.legalMoves_general[result[0]][result[1]] = 'O'
                             break
+                    #print(self.legalMoves_general)
                 
     # This will check to see if the move made puts one's own king in check (another type of illegal move)
     def getLegal_pin(self, white, piece_oldPos, kingPos):
@@ -527,7 +526,7 @@ class Piece:
 
         # If the king cant make any moves but it is not in check, then we need
         # to test for stalemate.
-        self.getLegal(kingPos, king, white)
+        self.getLegal(kingPos, kingPos, king, white)
         legalKingMoves = 0
         
         for i in range(8):
@@ -613,7 +612,10 @@ class Piece:
                             inCheck += 1
                             print("adding B/R/Q move for white")
                             break
-                    elif piece == 'o':
+                    # This will make it so that checks can pass through your own king.
+                    # This prevents a bug where the king hasn't fully moved yet, so moving along
+                    # the check vector away from the check will count as a legal move.
+                    elif piece == 'o' or piece == 'K':
                         continue
                     else:
                         #print("no check along this vector")
@@ -628,7 +630,7 @@ class Piece:
                             inCheck += 1
                             print("adding B/R/Q move for black")
                             break
-                    elif piece == 'o':
+                    elif piece == 'o' or piece == 'k':
                         continue
                     else:
                         #print("no check along this vector")
@@ -655,7 +657,7 @@ class Piece:
 
             if -1<result[0]<8 and -1<result[1]<8:
                 # This will ignore second enemyPawnRange element if it isn't in its starting position.
-                if l == 1 and ((result[0] != 1 and white == False) or (result[0] != 6 and white == True)):
+                if l == 1 and (((result[0] != 1 and white == True) or (result[0] != 6 and white == False)) and pawnCapture == False ):
                     break
                 piece = self.get_piece(result)
                 print("Test piece:" + str(result) + str(piece))
@@ -663,7 +665,8 @@ class Piece:
             else:
                 #print("king check test: out of range!")
                 continue
-            if (white == True and piece == 'p') or (white == False and piece == 'P') or (piece == 'o' and pawnCapture == False):
+            if (white == True and piece == 'p') or (white == False and piece == 'P') or ((piece == 'P' and white == True and enemyPawn == False) or \
+                (piece == 'p' and white == False and enemyPawn == False)):
                 pinnedState = self.getLegal_pin((not white), result, kingPos)    
                 if pinnedState == [] or enemyPawn == True:    
                     inCheck += 1
@@ -763,20 +766,22 @@ class Piece:
             #print("hi")
             self.legalMoves_general[element[0]][element[1]] = 'O'
 
+board = Board()
+piece = Piece()
 
 # Testing
 
-board = Board()
-white = True
+#board = Board()
+#white = True
 
-oldPosTest = (4,2)
-queenPosTest = (7,3)
-newPosTest = (1,1)
+#oldPosTest = (4,2)
+#queenPosTest = (7,3)
+#newPosTest = (1,1)
 
-pawnOldPos = (6,3)
+#pawnOldPos = (6,3)
 
-specialMove = False
-piece = Piece()
+#specialMove = False
+#piece = Piece()
 
 #test_bishop = piece.getLegal(oldPosTest, 'Q')
 #test_knight = piece.getLegal(oldPosTest, 'Q', white)
@@ -786,18 +791,18 @@ piece = Piece()
 #print(test_bishop)
 #print(test_rook)
 
-knight = "knight"
+#knight = "knight"
 
 #test_queen = piece.getLegal(queenPosTest, 'Q', white)
 
-kingPos = (7,4)
-king2Pos = (6,5)
-king3Pos = (4,4)
-knight_oldPos = (5,6)
-knight2_oldPos = (5,4)
+#kingPos = (7,4)
+#king2Pos = (6,5)
+#king3Pos = (4,4)
+#knight_oldPos = (5,6)
+#knight2_oldPos = (5,4)
 
-queen_oldPos = (7,3)
-bishop_oldPos = (7,5)
+#queen_oldPos = (7,3)
+#bishop_oldPos = (7,5)
 
 #pin_test1 = piece.getLegal_pin(white, knight_oldPos, king2Pos)
 #print(pin_test1)
