@@ -1,6 +1,9 @@
 import pygame
 import stockfish
 import csv
+#TODO: Pieces with unlimited range are seen to be able to capture a piece through another piece if the piece is pinned.
+#TODO: pinned black pieces are seen as legal to capture a checking piece!
+
 #TODO: Take into account enemy kings in piece occupancy!
 
 # note to self: board will be indexed 1-8.
@@ -38,14 +41,14 @@ class Board:
             self.whiteKing_pos = (7,4)
             self.blackKing_pos = (0,4)
             writer = csv.writer(board)
-            writer.writerow(['r','n','b','q','k','b','n','r'])
-            writer.writerow(['p','p','p','p','p','p','p','p'])
+            writer.writerow(['r','n','b','q','k','r','n','r'])
+            writer.writerow(['p','p','r','p','p','p','p','p'])
             writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['b','o','b','o','o','o','o','o'])
+            writer.writerow(['o','o','o','o','r','o','o','o'])
             writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['P','P','o','o','P','o','P','p'])
-            writer.writerow(['R','B','o','B','K','B','N','R'])
+            writer.writerow(['o','o','o','o','o','o','b','o'])
+            writer.writerow(['P','P','P','P','o','B','P','P'])
+            writer.writerow(['R','N','q','B','K','B','o','r'])
 
             '''writer.writerow(['r','o','o','o','q','r','o','o'])
             writer.writerow(['o','o','o','o','p','o','k','o'])
@@ -66,33 +69,34 @@ class Board:
             writer.writerow(['B','R','o','Q','o','o','o','o'])'''
             
     # This method will update piece positions in csv file
-    def update(self, oldPos, newPos, specialMove, white):
-        myPiece = Piece.get_piece(self, oldPos)
-             # This is the default case that works for any normal move or capture.
+    # 'specialMovePiece' is only for promotions. (By default it will be passed in as 'o')
+    def update(self, oldPos, newPos, newPiece, white, specialMove):
+        # This is the default case that works for any normal move or capture.
         if specialMove == 0:
-            self.move(oldPos, newPos, myPiece)
+            self.move(oldPos, newPos, newPiece)
         # This will be for Kingside Castling
         elif specialMove == 1:
-            pass
+            if white == True:
+                # NOTE: This is hardcoded for now. If I wanted to do FischerRandom, I would have to change this.
+                # Also, it's a litte weird that I'm moving the Rook before the king, but this helps optimize.
+                self.move((7,7), (7,5), 'R')
+            else:
+                self.move((0,7), (0,5), 'r')
+            self.move(oldPos, newPos, newPiece)
         # Queenside Castling
         elif specialMove == 2:
-            pass
-        # Queen Promotion
+            if white == True:
+                self.move((7,0), (7,3), 'R')
+            else:
+                self.move((0,0), (0,3), 'r')
+            self.move(oldPos, newPos, newPiece)
+        # Promotions
         elif specialMove == 3:
-            pass
-        # Rook Promotion
-        elif specialMove == 4:
-            pass
-        # Knight promotion
-        elif specialMove == 5:
-            pass
-        # Bishop promotion
-        elif specialMove == 6:
-            pass
+            print("Now promoting to: " + str(newPiece))
+            self.move(oldPos, newPos, newPiece)
         else:
             print("Bruh what kinda goofy-ahh move did you just make??")
 
-        Board.move(self, oldPos, newPos, piece)
     #TODO: implement board.update!
     def move(self, oldPos, newPos, piece):
         with open('chess.csv', 'r') as board:
@@ -482,14 +486,7 @@ class Piece:
             king = 'k'
             print("it is black's turn.")
 
-
         if numChecks == 1:
-
-            # Only legal moves are: moving king out of check or capturing or blocking the piece that is giving the check.
-            #TODO: Add more code here!
-            #Specifically: 
-            # 1. Find a way to obtain piece check vector (unless piece is knight)
-            # 2. Check for pin on possible piece block or capture.
             
             if white == True:
                 #Note: checkPos is the position of checking piece.
@@ -604,13 +601,16 @@ class Piece:
                 # matches checks for white pieces
                 if white == True:
                     if piece == 'q' or (piece == 'b' and -1<i<4) or (piece == 'r' and 3<i<8):
-                        pinnedState = self.getLegal_pin((white), result, kingPos)    
+                        pinnedState = self.getLegal_pin((not white), result, kingPos)    
                         if pinnedState == [] or enemyPawn == True:
                             if inCheck == 0:
                                 # This will lock the vector for the first check that is detected.
                                 self.checkVector = checkVector
                             inCheck += 1
                             print("adding B/R/Q move for white")
+                            break
+                        elif pinnedState != []:
+                            print("abandoning vector!")
                             break
                     # This will make it so that checks can pass through your own king.
                     # This prevents a bug where the king hasn't fully moved yet, so moving along
@@ -630,6 +630,9 @@ class Piece:
                             inCheck += 1
                             print("adding B/R/Q move for black")
                             break
+                        elif pinnedState != []:
+                            print("abandoning vector!")
+                            break
                     elif piece == 'o' or piece == 'k':
                         continue
                     else:
@@ -648,9 +651,12 @@ class Piece:
             if (white == True and piece == 'n') or (white == False and piece == 'N'):
                 pinnedState = self.getLegal_pin((not white), result, kingPos)    
                 if pinnedState == [] or enemyPawn == True:
+                    if inCheck == 0:
+                        self.checkVector = [result]
+                        print("knight vector thing:" + str(result))
                     inCheck += 1
-                    print("adding legal K move")
-        # for pawns TODO: change this to account for blocks!
+                    print("adding legal N move")
+        # For pawns
         for l in range(2):
             result = tuple(map(lambda x,y: x + y, pos, self.enemyPawnRange[l]))
             print("pawnPos: " + str(result))
@@ -768,62 +774,3 @@ class Piece:
 
 board = Board()
 piece = Piece()
-
-# Testing
-
-#board = Board()
-#white = True
-
-#oldPosTest = (4,2)
-#queenPosTest = (7,3)
-#newPosTest = (1,1)
-
-#pawnOldPos = (6,3)
-
-#specialMove = False
-#piece = Piece()
-
-#test_bishop = piece.getLegal(oldPosTest, 'Q')
-#test_knight = piece.getLegal(oldPosTest, 'Q', white)
-#test_rook = piece.getLegal(oldPosTest, 'R')
-
-#print(test_knight)
-#print(test_bishop)
-#print(test_rook)
-
-#knight = "knight"
-
-#test_queen = piece.getLegal(queenPosTest, 'Q', white)
-
-#kingPos = (7,4)
-#king2Pos = (6,5)
-#king3Pos = (4,4)
-#knight_oldPos = (5,6)
-#knight2_oldPos = (5,4)
-
-#queen_oldPos = (7,3)
-#bishop_oldPos = (7,5)
-
-#pin_test1 = piece.getLegal_pin(white, knight_oldPos, king2Pos)
-#print(pin_test1)
-#pin_test2 = piece.getLegal_pin(white, knight2_oldPos, kingPos)
-#print(pin_test2)
-#pin_test3 = piece.getLegal_pin(white, queen_oldPos, kingPos)
-#print(pin_test3)
-#inCheck_test1 = piece.getLegal_pieceControl(king3Pos, white) 
-#print("Number of Checks on king: " + str(inCheck_test1))
-#king.get_piece((5,1))
-#name = input('what is your name?')
-#print(name)
-#legalMoves_general = piece.legalMoves_general
-
-#board.update(oldPosTest, newPosTest, specialMove=0)
-#print(legalMoves_general)
-#print(piece.pinVector_rowcol)
-#piece.legal_convolution(legalMoves_general, piece.pinVector_rowcol)
-#print(piece.finalMoves)
-#piece.getLegal(pawnOldPos, 'P', white)
-#print(piece.pawnRange)
-#piece.getLegal(kingPos, 'K', white)
-#piece.getLegal(knight2_oldPos, 'N', white)
-

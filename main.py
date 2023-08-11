@@ -68,7 +68,6 @@ if __name__ == '__main__':
             piece.legal_convolution(piece.finalMoves, piece.checkVectorPermanent)
             #print(piece.finalMoves)
 
-
         #print(piece.finalMoves)
         print("Select new position for piece, or type 'exit")
         while True:
@@ -86,10 +85,12 @@ if __name__ == '__main__':
                 except:
                     print("Piece coords not in correct format. Try again.")
             if piece.finalMoves[newPos[0]][newPos[1]] == 'O':
-                board.move(oldPos, newPos, myPiece)
+                #TODO: add code for special moves here!
+                board.update(oldPos, newPos, myPiece, white, 0)
                 print("move successful!")
                 #very important to keep track of last move that occurred.
                 lastEnemyMove = newPos
+                # Update king position if king moved.
                 if white == True:
                     white = False
                     if myPiece == 'K':
