@@ -46,9 +46,9 @@ class Board:
             writer.writerow(['o','o','o','o','o','o','o','o'])
             writer.writerow(['o','o','o','o','o','o','o','o'])
             writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['o','o','o','o','o','o','b','o'])
-            writer.writerow(['P','P','P','P','o','P','P','P'])
-            writer.writerow(['R','N','B','Q','K','B','N','r'])
+            writer.writerow(['o','o','o','o','o','o','o','o'])
+            writer.writerow(['P','P','P','P','P','P','P','P'])
+            writer.writerow(['R','N','B','Q','K','B','N','R'])
 
             '''writer.writerow(['r','o','o','o','q','r','o','o'])
             writer.writerow(['o','o','o','o','p','o','k','o'])
@@ -483,7 +483,7 @@ class Piece:
  
     # TODO: For whichever number of checks the king is in, determine the amount of legal moves. If there are no checks, this isn't taken into account.
     # This method will also detect if checkmate or stalemate has been achieved.
-    def getLegal_mate(self, kingPos, checkPos, numChecks, white, pieceVectorTemp):
+    def getLegal_mate(self, kingPos, numChecks, white, pieceVectorTemp):
     # TODO: now that I have occupancy vector, I can now run getLegalinCheck for each position! 
         # For clarification, the checkPiece will be the piece that moves and delivers the check, or rather the first check given.
         print("starting getLegal_mate...")
@@ -653,7 +653,7 @@ class Piece:
                     else:
                         #print("no check along this vector")
                         break
-        print(self.checkVector)
+        #print(self.checkVector)
         # for knights
         for k in range(8):
             
@@ -672,17 +672,22 @@ class Piece:
                     inCheck += 1
                     print("adding legal N move")
         # For pawns
+        blocking2Move = 'o'
         for l in range(2):
             result = tuple(map(lambda x,y: x + y, pos, self.enemyPawnRange[l]))
-            print("pawnPos: " + str(result))
-
+            #print("pawnPos: " + str(result))
             if -1<result[0]<8 and -1<result[1]<8:
-                # This will ignore second enemyPawnRange element if it isn't in its starting position.
-                if l == 1 and (((result[0] != 1 and white == True) or (result[0] != 6 and white == False)) and pawnCapture == False ):
+                # This will ignore second noncapture enemyPawnRange element if it isn't in its starting position.
+                # This will also ignore if there is a piece inbetween this position and a blocking position along checkVector
+                if l == 1 and (((result[0] != 1 and white == True) or (result[0] != 6 and white == False)\
+                or blocking2Move != 'o') and pawnCapture == False):
                     break
                 piece = self.get_piece(result)
-                print("Test piece:" + str(result) + str(piece))
-                print("pawnCapture:" + str(pawnCapture))
+                # Basically, if this piece does not equal 'o', that means the pawn can't move two squares.
+                blocking2Move = piece
+                #print("blocking2Move: " + str(blocking2Move))
+                #print("Test piece:" + str(result) + str(piece))
+                #print("pawnCapture:" + str(pawnCapture))
             else:
                 #print("king check test: out of range!")
                 continue
@@ -746,9 +751,12 @@ class Piece:
             for i in self.blackPieces:
                 if capturePiece2 == i:
                     self.pawnRange += [capture2]
-                    break        
-            if pos[0] == 6 and self.get_piece(forward2) == 'o': # if pawn at starting position and 2 empty spaces
-                    self.pawnRange += [forward2]
+                    break
+            if self.get_piece(forward1) == 'o':
+                self.pawnRange += [forward1]
+                print(self.pawnRange)        
+                if pos[0] == 6 and self.get_piece(forward2) == 'o': # if pawn at starting position and 2 empty spaces
+                        self.pawnRange += [forward2]
             #print(tuple([pos[0]-1, pos[1]+1]))
             # print(capture2)
             
@@ -773,15 +781,12 @@ class Piece:
                 if capturePiece2 == i:
                     self.pawnRange += [capture2]
                     break
-            if pos[0] == 1 and self.get_piece(forward2) == 'o': # if pawn at starting position and 2 empty spaces
-                    self.pawnRange += [forward2]
-        #print(self.blackPawnRange)
-            # Testing forward movement.
-        if self.get_piece(forward1) == 'o':
-            self.pawnRange += [forward1]
-        print(self.pawnRange)
-            
-
+            if self.get_piece(forward1) == 'o':
+                self.pawnRange += [forward1]
+                print(self.pawnRange)
+                if pos[0] == 1 and self.get_piece(forward2) == 'o': # if pawn at starting position and 2 empty spaces
+                        self.pawnRange += [forward2]
+    
         # Now to transfer possible moves list to self.legalMoves_general.
         for element in self.pawnRange:
             #print("hi")

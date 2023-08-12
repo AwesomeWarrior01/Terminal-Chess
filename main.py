@@ -7,7 +7,7 @@ if __name__ == '__main__':
     kingPos = board.whiteKing_pos
     specialMove = False
     
-    lastEnemyMove = (3,0) # This last enemy move is set to a dummy value since there's no checks on move #1
+    lastEnemyPawnMove = (-1,-1) # This last enemy move is set to a dummy value since there's no checks on move #1
 
     print("white to move:")
     while True:
@@ -16,7 +16,7 @@ if __name__ == '__main__':
         numChecks = piece.getLegal_pieceControl(kingPos, kingPos, white, True, True)
         print("check vector: " +  str(piece.checkVector))
         pieceVectorTemp = piece.checkVector
-        piece.getLegal_mate(kingPos, lastEnemyMove, numChecks, white, pieceVectorTemp)
+        piece.getLegal_mate(kingPos, numChecks, white, pieceVectorTemp)
 
         legalMoves_pin = []
         while True:
@@ -87,7 +87,11 @@ if __name__ == '__main__':
                 board.update(oldPos, newPos, myPiece, white, 0)
                 print("move successful!")
                 #very important to keep track of last move that occurred.
-                lastEnemyMove = newPos
+                if myPiece == 'p' or myPiece == 'P':
+                    lastEnemyPawnMove = newPos
+                    print("en-passant could be legal next turn!")
+                else:
+                    lastEnemyPawnMove = (-1,-1)
                 # Update king position if king moved.
                 if white == True:
                     white = False
