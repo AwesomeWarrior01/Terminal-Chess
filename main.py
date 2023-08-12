@@ -1,7 +1,6 @@
 from legal import *
 
 if __name__ == '__main__':
-    # Initialize game, constants
 
     # Initialize some variables for when starting the game.
     white = True
@@ -12,9 +11,6 @@ if __name__ == '__main__':
 
     print("white to move:")
     while True:
-
-        #TODO: call 'getLegal_inCheck' here, and then call 'getLegal_mate!
-        # Gets check vector, if there is one.
         
         # This is really bad, and I should definitely have variable arguements, but this should also work.
         numChecks = piece.getLegal_pieceControl(kingPos, kingPos, white, True, True)
@@ -29,7 +25,8 @@ if __name__ == '__main__':
             Piece()
             inputString = input()
             try:
-                oldPos= tuple(map(int, inputString.split(',')))
+                inputString = board.letterNum_to_coords(inputString)
+                oldPos= inputString
                 if -1<oldPos[0]<8 and -1<oldPos[1]<8:
                     break
                 else:
@@ -37,7 +34,6 @@ if __name__ == '__main__':
             except:
                 print("piece coords not in correct format. Try again.")
         #print(myPos)
-
 
         myPiece = piece.get_piece(oldPos)
         if myPiece == 'o':
@@ -77,13 +73,15 @@ if __name__ == '__main__':
                 break
             else:
                 try:
-                    newPos= tuple(map(int, inputString.split(',')))
+                    inputString = board.letterNum_to_coords(inputString)
+                    newPos= inputString
                     if -1<newPos[0]<8 and -1<newPos[1]<8:
                         pass
                     else:
                         print("Piece coords out of range. Try again.")
                 except:
                     print("Piece coords not in correct format. Try again.")
+                    continue
             if piece.finalMoves[newPos[0]][newPos[1]] == 'O':
                 #TODO: add code for special moves here!
                 board.update(oldPos, newPos, myPiece, white, 0)

@@ -41,14 +41,14 @@ class Board:
             self.whiteKing_pos = (7,4)
             self.blackKing_pos = (0,4)
             writer = csv.writer(board)
-            writer.writerow(['r','n','b','q','k','r','n','r'])
-            writer.writerow(['p','p','r','p','p','p','p','p'])
+            writer.writerow(['r','n','b','q','k','b','n','r'])
+            writer.writerow(['p','p','p','p','p','p','p','p'])
             writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['o','o','o','o','r','o','o','o'])
+            writer.writerow(['o','o','o','o','o','o','o','o'])
             writer.writerow(['o','o','o','o','o','o','o','o'])
             writer.writerow(['o','o','o','o','o','o','b','o'])
-            writer.writerow(['P','P','P','P','o','B','P','P'])
-            writer.writerow(['R','N','q','B','K','B','o','r'])
+            writer.writerow(['P','P','P','P','o','P','P','P'])
+            writer.writerow(['R','N','B','Q','K','B','N','r'])
 
             '''writer.writerow(['r','o','o','o','q','r','o','o'])
             writer.writerow(['o','o','o','o','p','o','k','o'])
@@ -97,7 +97,8 @@ class Board:
         else:
             print("Bruh what kinda goofy-ahh move did you just make??")
 
-    #TODO: implement board.update!
+    # When called, this method actually moves the piece to the new position
+    # and replaces the old position with 'o'.
     def move(self, oldPos, newPos, piece):
         with open('chess.csv', 'r') as board:
             reader = csv.reader(board, delimiter=',', quoting=csv.QUOTE_MINIMAL)
@@ -111,6 +112,20 @@ class Board:
             writer = csv.writer(board)
             for row in layout:
                 writer.writerow(row)
+    # The user will enter standard chess coordinates (i.e. a4, b4, h7) which will be
+    # converted to list indexes.
+    def letterNum_to_coords(self, letterNum):
+        letters = {'a':0,'b':1,'c':2,'d':3,'e':4,'f':5,'g':6,'h':7}
+        index = 0
+        for character in letterNum:
+            if index == 0:
+                x = letters[character]
+            elif index == 1:
+                y = 8 - int(character)
+            index+=1 
+        result = (y,x)
+        print(result)
+        return result
         
 class Piece:
     def __init__(self):
