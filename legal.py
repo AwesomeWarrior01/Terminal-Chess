@@ -1,12 +1,10 @@
 import pygame
 import stockfish
 import csv
-#TODO: Pieces with unlimited range are seen to be able to capture a piece through another piece if the piece is pinned.
-#TODO: pinned black pieces are seen as legal to capture a checking piece!
 
 #TODO: Take into account enemy kings in piece occupancy!
 
-# note to self: board will be indexed 1-8.
+# note to self: board will be indexed 0-7.
 # board is index by (column, row). This means that (0,0) refers to the piece in the upper-left hand corner.
 
 # Instead of checking if a move is legal after the fact, I'm going to make it so that all legal moves are calculated and shown when you click a piece.
@@ -27,7 +25,6 @@ import csv
 # 3. Moving your own king into check.
 # 4. Moving your own piece that would put your own king into check
 
-
 # I'm currently at a dilemna when it comes to recording general piece legality: Do I append every position one-by-one to a csv file, or do I create a list and append to that?
 # Also, to make things easier, should I get rid of the child classes and just have one piece class with if statements?
 # I think I will do this since I want all pieces to share one legalMoves variable. Also, I don't think there's much merit in having child classes since
@@ -43,11 +40,11 @@ class Board:
             writer = csv.writer(board)
             writer.writerow(['r','n','b','q','k','b','n','r'])
             writer.writerow(['p','p','p','p','p','p','p','p'])
+            writer.writerow(['b','o','o','o','o','o','o','o'])
+            writer.writerow(['b','P','o','o','o','o','o','o'])
+            writer.writerow(['o','p','o','o','o','o','o','o'])
             writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['P','P','P','P','P','P','P','P'])
+            writer.writerow(['P','P','P','o','o','P','P','P'])
             writer.writerow(['R','N','B','Q','K','B','N','R'])
 
             '''writer.writerow(['r','o','o','o','q','r','o','o'])
@@ -69,29 +66,40 @@ class Board:
             writer.writerow(['B','R','o','Q','o','o','o','o'])'''
             
     # This method will update piece positions in csv file
-    # 'specialMovePiece' is only for promotions. (By default it will be passed in as 'o')
-    def update(self, oldPos, newPos, newPiece, white, specialMove):
+    # 'specialMovePiece' is only for promotions. (By default it will be passed in as '0')
+    def update(self, oldPos, newPos, newPiece, white):
         # This is the default case that works for any normal move or capture.
+        specialMove = piece.legalMoves_special[newPos[0]][newPos[1]]
+        specialMove = int(specialMove)
         if specialMove == 0:
+            print("hi")
             self.move(oldPos, newPos, newPiece)
         # This will be for Kingside Castling
         elif specialMove == 1:
+            self.move(oldPos, newPos, newPiece)
             if white == True:
                 # NOTE: This is hardcoded for now. If I wanted to do FischerRandom, I would have to change this.
-                # Also, it's a litte weird that I'm moving the Rook before the king, but this helps optimize.
                 self.move((7,7), (7,5), 'R')
             else:
                 self.move((0,7), (0,5), 'r')
-            self.move(oldPos, newPos, newPiece)
+  
         # Queenside Castling
         elif specialMove == 2:
+            self.move(oldPos, newPos, newPiece)
             if white == True:
                 self.move((7,0), (7,3), 'R')
             else:
                 self.move((0,0), (0,3), 'r')
-            self.move(oldPos, newPos, newPiece)
-        # Promotions
+        # En Passant
         elif specialMove == 3:
+            self.move(oldPos, newPos, newPiece)
+            # This is a very hacky way of doing the piece capture.
+            if white == True:
+                self.move((newPos[0]+1,newPos[1]), newPos, 'P')
+            else:
+                self.move((newPos[0]-1,newPos[1]), newPos, 'p')
+        # Promotions
+        elif specialMove == 4:
             print("Now promoting to: " + str(newPiece))
             self.move(oldPos, newPos, newPiece)
         else:
@@ -134,8 +142,10 @@ class Piece:
         self.whitePieces = ['P','N','B','R','Q','K']
         
         self.legalMoves = [None] * 8
+        self.legalMoves_special = [None] * 8
         for i in range(8):    
             self.legalMoves[i] = ['X','X','X','X','X','X','X','X']
+            self.legalMoves_special[i] = [0,0,0,0,0,0,0,0]
         with open('piece.csv', 'w') as writer:
             # This just creates the default legal moves by adding a whole bunch of rows to a csv file
             #self.legalMoves[0][1] = 'O'
@@ -159,7 +169,6 @@ class Piece:
             # This just creates the default legal moves by adding a whole bunch of rows to a csv file
             writerRow = csv.writer(writer)
             self.legalMoves_general = [None] * 8
-            self.legalMoves_general_tuples = [None] * 8
             for i in range(8):    
                 self.legalMoves_general[i] = ['X','X','X','X','X','X','X','X']
             loop = False
@@ -196,7 +205,7 @@ class Piece:
                             if newPiece == 'o':
                                 self.legalMoves_general[result[0]][result[1]] = 'O'
                                 # Test
-                                #self.legalMoves_general_tuples[result[0]][result[1]] = result
+
                             elif white == True:
                                 for k in range(6):
                                     if newPiece == self.whitePieces[k]:
@@ -207,7 +216,6 @@ class Piece:
                                         #print("can capture piece, but will go no farther.")
                                         self.legalMoves_general[result[0]][result[1]] = 'O'
                                         # Test
-                                        #self.legalMoves_general_tuples[result[0]][result[1]] = result
                                         superbreak = True 
                                         break
                                     else:
@@ -224,7 +232,6 @@ class Piece:
                                         #print("can capture piece, but will go no farther.")
                                         self.legalMoves_general[result[0]][result[1]] = 'O'
                                         # Test
-                                        #self.legalMoves_general_tuples[result[0]][result[1]] = result
                                         superbreak = True 
                                         break
                                     else:
@@ -277,12 +284,55 @@ class Piece:
                             #print("can capture piece, but will go no farther.")
                             self.legalMoves_general[result[0]][result[1]] = 'O'
                             # Test
-                            #self.legalMoves_general_tuples[result[0]][result[1]] = result
                             break
                         elif newPiece == 'o':
                             self.legalMoves_general[result[0]][result[1]] = 'O'
                             break
                     #print(self.legalMoves_general)
+
+    # This method will add in the legal moves that come from castling, en-passant, and promotion.
+    # These moves will be added to self.legalMoves_general, but the type of special move
+    # will also go into its own double list called legalMoves_special.
+    def getLegal_special(self, pos, myPiece, lastEnemyPawnMove):
+        # We don't technically need to pass 'white' since we can go by the
+        # specific piece alone.
+        for i in range(8):
+            self.legalMoves_special[i] = ['0','0','0','0','0','0','0','0']
+
+        # I don't need to check if out of board range here since the moves
+        # would be impossible to make.
+        posRight = (pos[0], pos[1]+1)
+        posLeft = (pos[0], pos[1]-1)
+        if myPiece == 'P':
+            print(lastEnemyPawnMove)
+            print(pos)
+            # White promotion
+            if pos[0] == 0:
+                pass
+            # White en-passant
+            
+            elif lastEnemyPawnMove[0] == pos[0] and (lastEnemyPawnMove[1] == posRight[1]\
+            or lastEnemyPawnMove[1] == posLeft[1]):
+                newPos = (lastEnemyPawnMove[0]-1, lastEnemyPawnMove[1])
+                self.legalMoves_general[newPos[0]][newPos[1]] = 'O'
+                self.legalMoves_special[newPos[0]][newPos[1]] = 3
+                print(self.legalMoves_general)
+        elif myPiece == 'p':
+            # Black promotion
+            if pos[0] == 7:
+                pass
+            # Black en-passant
+            elif lastEnemyPawnMove[0] == pos[0] and (lastEnemyPawnMove[1] == posRight[1]\
+            or lastEnemyPawnMove[1] == posLeft[1]):
+                newPos = (lastEnemyPawnMove[0]+1, lastEnemyPawnMove[1])
+                self.legalMoves_general[newPos[0]][newPos[1]] = 'O'
+                self.legalMoves_special[newPos[0]][newPos[1]] = 3
+        elif myPiece == 'K':
+            pass
+        elif myPiece == 'k':
+            pass
+        else:
+            print("No special moves for chosen piece!")
                 
     # This will check to see if the move made puts one's own king in check (another type of illegal move)
     def getLegal_pin(self, white, piece_oldPos, kingPos):

@@ -55,6 +55,7 @@ if __name__ == '__main__':
         print(myPiece)
         print("white: " + str(white))
         piece.getLegal(oldPos, kingPos, myPiece, white)
+        piece.getLegal_special(oldPos, myPiece, lastEnemyPawnMove)
         legalMoves_general = piece.legalMoves_general
         legalMoves_pin = piece.getLegal_pin(white, oldPos, kingPos)
         piece.legal_convolution(legalMoves_general, legalMoves_pin)
@@ -84,25 +85,34 @@ if __name__ == '__main__':
                     continue
             if piece.finalMoves[newPos[0]][newPos[1]] == 'O':
                 #TODO: add code for special moves here!
-                board.update(oldPos, newPos, myPiece, white, 0)
+                board.update(oldPos, newPos, myPiece, white)
                 print("move successful!")
-                #very important to keep track of last move that occurred.
-                if myPiece == 'p' or myPiece == 'P':
-                    lastEnemyPawnMove = newPos
-                    print("en-passant could be legal next turn!")
-                else:
-                    lastEnemyPawnMove = (-1,-1)
+                
                 # Update king position if king moved.
                 if white == True:
+                    # Special moves pawn
+                    if myPiece == 'p' or myPiece == 'P':
+                        lastEnemyPawnMove = newPos
+                        print("en-passant could be legal next turn!")
+                    else:
+                        lastEnemyPawnMove = (-1,-1)
                     white = False
+                    # Special moves king
                     if myPiece == 'K':
                         board.whiteKing_pos = newPos
                         print("new white king pos is: " + str(newPos))
                     kingPos = board.blackKing_pos
                     print("Black to move:")
-                else:
+                else: # Black
+                    #  Special moves pawn
+                    if myPiece == 'p' or myPiece == 'P':
+                        lastEnemyPawnMove = newPos
+                        print("en-passant could be legal next turn!")
+                    else:
+                        lastEnemyPawnMove = (-1,-1)
                     white = True
                     kingPos = board.whiteKing_pos
+                    # Special moves king
                     if myPiece == 'k':
                         board.blackKing_pos = newPos
                         print("new black king pos is: " + str(newPos))
