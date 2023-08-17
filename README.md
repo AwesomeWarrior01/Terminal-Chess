@@ -1,4 +1,4 @@
-# Goofy-ahh-Chess
+# Terminal Chess
 Right now, This seeks to be a fully coded game of chess that acounts for all standard chess rules as a fun personal python project. Eventually, I will add my own spin on the game.
 
 ## Progress thus far
