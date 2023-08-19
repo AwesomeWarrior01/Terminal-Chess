@@ -1,8 +1,7 @@
-import pygame
-import stockfish
 import csv
 
-#TODO: Take into account enemy kings in piece occupancy!
+# TODO: Bug: Take into account enemy kings in piece occupancy!
+# TODO: Create promotion in getLegal_special
 
 # note to self: board will be indexed 0-7.
 # board is index by (column, row). This means that (0,0) refers to the piece in the upper-left hand corner.
@@ -37,15 +36,24 @@ class Board:
             #This just creates the stating position by adding a whole bunch of rows to csv file
             self.whiteKing_pos = (7,4)
             self.blackKing_pos = (0,4)
+            
+            # variables indicating if kings or rooks moved from start.
+            self.whiteKing1stMove = True
+            self.blackKing1stMove = True    
+            self.whiteRookLeft1stMove = True
+            self.whiteRookRight1stMove = True 
+            self.blackRookLeft1stMove = True
+            self.blackRookRight1stMove = True
+
             writer = csv.writer(board)
-            writer.writerow(['r','n','b','q','k','b','n','r'])
+            writer.writerow(['r','o','o','o','k','o','o','r'])
             writer.writerow(['p','p','p','p','p','p','p','p'])
-            writer.writerow(['b','o','o','o','o','o','o','o'])
+            writer.writerow(['b','o','o','o','o','N','o','o'])
             writer.writerow(['b','P','o','o','o','o','o','o'])
             writer.writerow(['o','p','o','o','o','o','o','o'])
-            writer.writerow(['o','o','o','o','o','o','o','o'])
-            writer.writerow(['P','P','P','o','o','P','P','P'])
-            writer.writerow(['R','N','B','Q','K','B','N','R'])
+            writer.writerow(['o','o','o','n','o','o','o','o'])
+            writer.writerow(['P','P','P','o','o','o','o','P'])
+            writer.writerow(['R','o','o','o','K','N','o','R'])
 
             '''writer.writerow(['r','o','o','o','q','r','o','o'])
             writer.writerow(['o','o','o','o','p','o','k','o'])
@@ -71,9 +79,20 @@ class Board:
         # This is the default case that works for any normal move or capture.
         specialMove = piece.legalMoves_special[newPos[0]][newPos[1]]
         specialMove = int(specialMove)
+        # For normal moves
         if specialMove == 0:
             print("hi")
             self.move(oldPos, newPos, newPiece)
+            if newPiece == 'K': self.whiteKing1stMove = False
+            elif newPiece == 'k': self.blackKing1stMove = False
+            # It's worth mentioning that the rook piece and position must both be accounted for, since 
+            # there are cases where you could have a non-rook piece on the rook starting square, which would 
+            # accidentally enable castling!
+            elif newPiece == 'R' and newPos == (7,0): self.whiteRookLeft1stMove = False
+            elif newPiece == 'R' and newPos == (7,7): self.whiteRookLeft1stMove = False
+            elif newPiece == 'r' and newPos == (0,0): self.blackRookLeft1stMove = False
+            elif newPiece == 'r' and newPos == (0,7): self.blackRookLeft1stMove = False
+
         # This will be for Kingside Castling
         elif specialMove == 1:
             self.move(oldPos, newPos, newPiece)
@@ -273,7 +292,6 @@ class Piece:
                 # Makes sure the pos isnt controlled by enemy if piece == king
                 if self.enemyControlledSquare == 0:
                     
-                # TODO: For the king though, I will also have to check for castling.
                     for k in range(6):
                         newPiece = self.get_piece(result)
                         if newPiece == self.whitePieces[k] and white == False:
@@ -293,9 +311,10 @@ class Piece:
     # This method will add in the legal moves that come from castling, en-passant, and promotion.
     # These moves will be added to self.legalMoves_general, but the type of special move
     # will also go into its own double list called legalMoves_special.
-    def getLegal_special(self, pos, myPiece, lastEnemyPawnMove):
+    def getLegal_special(self, pos, kingPos, myPiece, lastEnemyPawnMove, numChecks):
         # We don't technically need to pass 'white' since we can go by the
         # specific piece alone.
+
         for i in range(8):
             self.legalMoves_special[i] = ['0','0','0','0','0','0','0','0']
 
@@ -310,7 +329,6 @@ class Piece:
             if pos[0] == 0:
                 pass
             # White en-passant
-            
             elif lastEnemyPawnMove[0] == pos[0] and (lastEnemyPawnMove[1] == posRight[1]\
             or lastEnemyPawnMove[1] == posLeft[1]):
                 newPos = (lastEnemyPawnMove[0]-1, lastEnemyPawnMove[1])
@@ -327,10 +345,58 @@ class Piece:
                 newPos = (lastEnemyPawnMove[0]+1, lastEnemyPawnMove[1])
                 self.legalMoves_general[newPos[0]][newPos[1]] = 'O'
                 self.legalMoves_special[newPos[0]][newPos[1]] = 3
-        elif myPiece == 'K':
-            pass
-        elif myPiece == 'k':
-            pass
+        
+        elif myPiece == 'K' and numChecks == 0:
+            if board.whiteKing1stMove == True:
+                # kingside castling
+                if board.whiteRookRight1stMove == True:
+                    # We can call this method along the path the king must move when castling.
+                    # I'm to lazy to make it a vector to account for all possible cases, so this is hard-coded for now.
+                    inCheck1 = piece.getLegal_pieceControl((7,5), kingPos, True, True, True)
+                    inCheck2 = piece.getLegal_pieceControl((7,6), kingPos, True, True, True)
+                    piece1 = piece.get_piece((7,5))
+                    piece2 = piece.get_piece((7,6))
+                    if (inCheck1 == inCheck2 == 0) and (piece1 == piece2 == 'o'):
+                        newPos = (7,6)
+                        self.legalMoves_general[newPos[0]][newPos[1]] = 'O'
+                        self.legalMoves_special[newPos[0]][newPos[1]] = 1
+                # queenside castling
+                if board.whiteRookLeft1stMove == True:
+                    inCheck1 = piece.getLegal_pieceControl((7,3), kingPos, True, True, True)
+                    inCheck2 = piece.getLegal_pieceControl((7,2), kingPos, True, True, True)
+                    piece1 = piece.get_piece((7,3))
+                    piece2 = piece.get_piece((7,2))
+                    piece3 = piece.get_piece((7,1))
+                    if (inCheck1 == inCheck2 == 0) and (piece1 == piece2 == piece3 == 'o'):
+                        newPos = (7,2)
+                        self.legalMoves_general[newPos[0]][newPos[1]] = 'O'
+                        self.legalMoves_special[newPos[0]][newPos[1]] = 2
+
+        elif myPiece == 'k' and numChecks == 0:
+            if board.blackKing1stMove == True:
+                # kingside castling
+                if board.blackRookRight1stMove == True:
+                    inCheck1 = piece.getLegal_pieceControl((0,5), kingPos, False, True, True)
+                    inCheck2 = piece.getLegal_pieceControl((0,6), kingPos, False, True, True)
+                    piece1 = piece.get_piece((0,5))
+                    piece2 = piece.get_piece((0,6))    
+
+                    if (inCheck1 == inCheck2 == 0) and (piece1 == piece2 == 'o'):
+                        newPos = (0,6)
+                        self.legalMoves_general[newPos[0]][newPos[1]] = 'O'
+                        self.legalMoves_special[newPos[0]][newPos[1]] = 1
+                # queenside castling
+                if board.blackRookLeft1stMove == True:
+                    inCheck1 = piece.getLegal_pieceControl((0,3), kingPos, False, True, True)
+                    inCheck2 = piece.getLegal_pieceControl((0,2), kingPos, False, True, True)
+                    piece1 = piece.get_piece((0,3))
+                    piece2 = piece.get_piece((0,2))
+                    piece3 = piece.get_piece((0,1))
+
+                    if (inCheck1 == inCheck2 == 0) and (piece1 == piece2 == piece3 == 'o'):
+                        newPos = (0,2)
+                        self.legalMoves_general[newPos[0]][newPos[1]] = 'O'
+                        self.legalMoves_special[newPos[0]][newPos[1]] = 2
         else:
             print("No special moves for chosen piece!")
                 
@@ -531,10 +597,9 @@ class Piece:
         #If legal is true, the legal vector is determined as a blank vector.          
         return legalVector
  
-    # TODO: For whichever number of checks the king is in, determine the amount of legal moves. If there are no checks, this isn't taken into account.
+    # For whichever number of checks the king is in, determine the amount of legal moves. If there are no checks, this isn't taken into account.
     # This method will also detect if checkmate or stalemate has been achieved.
     def getLegal_mate(self, kingPos, numChecks, white, pieceVectorTemp):
-    # TODO: now that I have occupancy vector, I can now run getLegalinCheck for each position! 
         # For clarification, the checkPiece will be the piece that moves and delivers the check, or rather the first check given.
         print("starting getLegal_mate...")
         self.kingOnly = False
@@ -609,7 +674,6 @@ class Piece:
             else:
                 print("King is in check, but not checkmated or stalemated :)")
                 print(self.checkVectorPermanent)
-                #TODO: add check vector, then convolute with general piece legality to control legality!
 
 
     def getLegal_pieceControl(self, pos, kingPos, white, enemyPawn, pawnCapture):
@@ -623,8 +687,6 @@ class Piece:
         # an occupied square.
         self.checkVector = []
         inCheck = 0
-        #print(str(pawnCapture) + "idk")
-
         self.totalDeltaRange = [(1,1),(-1,1),(-1,-1),(1,-1),(1,0),(0,1),(-1,0),(0,-1)]
         self.enemyKnightRange = [(2,1),(1,2),(-1,2),(-2,1),(-2,-1),(-1,-2),(1,-2),(2,-1)]
         if white == True and enemyPawn == True:

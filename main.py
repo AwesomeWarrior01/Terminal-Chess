@@ -55,7 +55,7 @@ if __name__ == '__main__':
         print(myPiece)
         print("white: " + str(white))
         piece.getLegal(oldPos, kingPos, myPiece, white)
-        piece.getLegal_special(oldPos, myPiece, lastEnemyPawnMove)
+        piece.getLegal_special(oldPos, kingPos, myPiece, lastEnemyPawnMove, numChecks)
         legalMoves_general = piece.legalMoves_general
         legalMoves_pin = piece.getLegal_pin(white, oldPos, kingPos)
         piece.legal_convolution(legalMoves_general, legalMoves_pin)
