@@ -33,7 +33,7 @@ import csv
 class Board:
     def __init__(self) -> None:
         with open('chess.csv', 'w') as board:
-            #This just creates the stating position by adding a whole bunch of rows to csv file
+            #This just creates the starting position by adding a whole bunch of rows to csv file
             self.whiteKing_pos = (7,4)
             self.blackKing_pos = (0,4)
             
@@ -809,6 +809,15 @@ class Piece:
                 if pinnedState == [] or enemyPawn == True:    
                     inCheck += 1
                     print("adding legal pawn move")
+        # For enemy king
+        for m in range(8):
+            result = tuple(map(lambda x,y: x + y, pos, self.totalDeltaRange[m]))
+            if -1<result[0]<8 and -1<result[1]<8:
+                piece = self.get_piece(result)
+                if white == True and piece == 'k':
+                    inCheck += 1
+                elif white == False and piece == 'K':
+                    inCheck += 1
         return inCheck
     # In this function, legal1 wil be the matrix and legal2 will be the vector.
     def legal_convolution(self, legal1, legal2):
