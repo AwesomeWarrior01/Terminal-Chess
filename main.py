@@ -5,13 +5,12 @@ if __name__ == '__main__':
     # Initialize some variables for when starting the game.
     white = True
     kingPos = board.whiteKing_pos
-    specialMove = False
     
     lastEnemyPawnMove = (-1,-1) # This last enemy move is set to a dummy value since there's no checks on move #1
 
     print("white to move:")
     while True:
-        
+        promotionMove = False
         # This is really bad, and I should definitely have variable arguements, but this should also work.
         numChecks = piece.getLegal_pieceControl(kingPos, kingPos, white, True, True)
         print("check vector: " +  str(piece.checkVector))
@@ -70,8 +69,7 @@ if __name__ == '__main__':
         while True:
             inputString = input()
             #print(board.whiteKing_pos)
-            if inputString == "exit":
-                break
+            if inputString == "exit": break
             else:
                 try:
                     inputString = board.letterNum_to_coords(inputString)
@@ -85,17 +83,36 @@ if __name__ == '__main__':
                     continue
             if piece.finalMoves[newPos[0]][newPos[1]] == 'O':
                 #TODO: add code for special moves here!
+                # Special moves pawn
+                if myPiece == 'p' or myPiece == 'P':
+                    lastEnemyPawnMove = newPos
+                    print("en-passant could be legal next turn!")
+                    if newPos[0] == 0 or newPos[0] == 7:
+                        # TODO: there will be another prompt for promotion here.
+                        print("select a piece you would like to promote to\n\
+                        (i.e. 'queen', 'rook'. 'bishop', or 'knight') or select\n\
+                        'exit' to go back to piece seletion.")
+                        inputString = input()
+                        if inputString == "exit":
+                            break
+                        elif inputString == "queen":
+                            myPiece = 'Q' if white == True else 'q'
+                        elif inputString == "rook":
+                            myPiece = 'R' if white == True else 'r'
+                        elif inputString == "bishop":
+                            myPiece = 'B' if white == True else 'b'
+                        elif inputString == "knight":
+                            myPiece = 'K' if white == True else 'k'
+                        else:
+                            print("Not a valid piece. Try again."); continue
+
+                else:
+                    lastEnemyPawnMove = (-1,-1) # set to some dummy coord.
                 board.update(oldPos, newPos, myPiece, white)
                 print("move successful!")
                 
                 # Update king position if king moved.
                 if white == True:
-                    # Special moves pawn
-                    if myPiece == 'p' or myPiece == 'P':
-                        lastEnemyPawnMove = newPos
-                        print("en-passant could be legal next turn!")
-                    else:
-                        lastEnemyPawnMove = (-1,-1)
                     white = False
                     # Special moves king
                     if myPiece == 'K':
@@ -104,12 +121,6 @@ if __name__ == '__main__':
                     kingPos = board.blackKing_pos
                     print("Black to move:")
                 else: # Black
-                    #  Special moves pawn
-                    if myPiece == 'p' or myPiece == 'P':
-                        lastEnemyPawnMove = newPos
-                        print("en-passant could be legal next turn!")
-                    else:
-                        lastEnemyPawnMove = (-1,-1)
                     white = True
                     kingPos = board.whiteKing_pos
                     # Special moves king

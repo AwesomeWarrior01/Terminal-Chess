@@ -1,6 +1,5 @@
 import csv
 
-# TODO: Bug: Take into account enemy kings in piece occupancy!
 # TODO: Create promotion in getLegal_special
 
 # note to self: board will be indexed 0-7.
@@ -47,13 +46,13 @@ class Board:
 
             writer = csv.writer(board)
             writer.writerow(['r','o','o','o','k','o','o','r'])
-            writer.writerow(['p','p','p','p','p','p','p','p'])
-            writer.writerow(['b','o','o','o','o','N','o','o'])
+            writer.writerow(['p','P','p','p','p','p','p','p'])
+            writer.writerow(['b','o','o','o','o','o','o','o'])
             writer.writerow(['b','P','o','o','o','o','o','o'])
             writer.writerow(['o','p','o','o','o','o','o','o'])
-            writer.writerow(['o','o','o','n','o','o','o','o'])
-            writer.writerow(['P','P','P','o','o','o','o','P'])
-            writer.writerow(['R','o','o','o','K','N','o','R'])
+            writer.writerow(['o','o','o','o','o','o','o','o'])
+            writer.writerow(['P','P','P','P','P','o','p','P'])
+            writer.writerow(['R','o','o','o','K','o','o','o'])
 
             '''writer.writerow(['r','o','o','o','q','r','o','o'])
             writer.writerow(['o','o','o','o','p','o','k','o'])
@@ -814,10 +813,12 @@ class Piece:
             result = tuple(map(lambda x,y: x + y, pos, self.totalDeltaRange[m]))
             if -1<result[0]<8 and -1<result[1]<8:
                 piece = self.get_piece(result)
-                if white == True and piece == 'k':
+                if white == True and piece == 'k' and enemyPawn == True:
                     inCheck += 1
-                elif white == False and piece == 'K':
+                    print("adding enemy black king")
+                elif white == False and piece == 'K' and enemyPawn == True:
                     inCheck += 1
+                    print("adding enemy white king")
         return inCheck
     # In this function, legal1 wil be the matrix and legal2 will be the vector.
     def legal_convolution(self, legal1, legal2):
