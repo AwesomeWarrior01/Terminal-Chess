@@ -5,7 +5,7 @@ if ! command -v inotifywait &> /dev/null; then
 	exit 1
 fi
 
-file_to_monitor="/home/jason/python/stockfish_project/piece.csv"
+file_to_monitor="./piece.csv"
 
 while true; do
 	clear

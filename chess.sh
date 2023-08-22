@@ -19,7 +19,13 @@ tmux split-window -h
 
 # Run the third script in the third pane
 
-tmux send-keys -t my_session 'cd python/stockfish_project/; python3 main.py ' C-m
+tmux send-keys -t my_session 'python3 main.py ' C-m
+
+#re-select the 1st pane and split, then switch to pane 4
+tmux select-pane -t 0
+tmux split-window -h
+tmux send-keys -t my_session './title.sh' C-m
+tmux select-pane -t 3
 
 # Attach to the tmux session
 tmux attach -t my_session
