@@ -13,7 +13,6 @@ if __name__ == '__main__':
         promotionMove = False
         # This is really bad, and I should definitely have variable arguements, but this should also work.
         numChecks = piece.getLegal_pieceControl(kingPos, kingPos, white, True, True)
-        print("check vector: " +  str(piece.checkVector))
         pieceVectorTemp = piece.checkVector
         piece.getLegal_mate(kingPos, numChecks, white, pieceVectorTemp)
 
@@ -32,7 +31,6 @@ if __name__ == '__main__':
                     print("Piece coords out of range. Try again.")
             except:
                 print("piece coords not in correct format. Try again.")
-        #print(myPos)
 
         myPiece = piece.get_piece(oldPos)
         if myPiece == 'o':
@@ -52,7 +50,6 @@ if __name__ == '__main__':
             continue
         # piece.getLegal_mate()
         print(myPiece)
-        print("white: " + str(white))
         piece.getLegal(oldPos, kingPos, myPiece, white)
         piece.getLegal_special(oldPos, kingPos, myPiece, lastEnemyPawnMove, numChecks)
         legalMoves_general = piece.legalMoves_general
@@ -68,7 +65,6 @@ if __name__ == '__main__':
         print("Select new position for piece, or type 'exit")
         while True:
             inputString = input()
-            #print(board.whiteKing_pos)
             if inputString == "exit": break
             else:
                 try:
@@ -86,7 +82,6 @@ if __name__ == '__main__':
                 # Special moves pawn
                 if myPiece == 'p' or myPiece == 'P':
                     lastEnemyPawnMove = newPos
-                    print("en-passant could be legal next turn!")
                     if newPos[0] == 0 or newPos[0] == 7:
                         # TODO: there will be another prompt for promotion here.
                         print("select a piece you would like to promote to\n\
