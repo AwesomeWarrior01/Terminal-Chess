@@ -38,5 +38,3 @@ In specific, here are the names of all the methods in thi class and what they do
 * getLegal_pin: Basically, it will return if a piece is pinned your king or not, as well as the new legal moves list for the piece.
 * getLegal_mate: Checks to see if the king is checkmated or not. This is dependent on 'getLegal_pieceControl'
 * getLegal_piecControl: returns how many times own king is in check (assuming total legality, it is either 0, 1 or 2) However, with some other arguements, this method can also be configured to see if how many pieces (either yours or your opponent's) controls a certain square.
-
-Right now, this project still isn't fully complete. For the time being, i have yet to fix some bugs with castling and add promotions.
